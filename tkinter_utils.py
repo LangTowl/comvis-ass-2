@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 import tkinter as tk
 from tkinter import ttk
@@ -118,6 +119,8 @@ class TkinterUtils:
         # Execute corresponding filter function
         if self.filter_selector.get() == "Box Filter":
             self.box_filter()
+        elif self.filter_selector.get() == "Box Filter (OpenCV)":
+            self.box_filter_opencv()
 
 
 
@@ -178,32 +181,27 @@ class TkinterUtils:
 
         print("Conversion complete.\n")
 
+    def box_filter_opencv(self):
+        print("Beginning box filter conversion...\n")
 
+        # Convert images to compatible format
+        img1_cv = cv2.cvtColor(np.array(self.image1), cv2.COLOR_RGB2BGR)
+        img2_cv = cv2.cvtColor(np.array(self.image2), cv2.COLOR_RGB2BGR)
 
-"""
-import cv2
-import numpy as np
-from PIL import Image
+        # Determine which kernel size to use
+        ksize = (3, 3) if self.size_selector.get() == "3 x 3" else (5, 5)
 
-# Open the image using PIL
-img1 = Image.open('path_to_image.jpg')
+        # Execute modification
+        temp1 = cv2.boxFilter(img1_cv, ddepth = -1, ksize = ksize)
+        temp2 = cv2.boxFilter(img2_cv, ddepth = -1, ksize = ksize)
 
-# Convert the PIL image to a NumPy array
-open_cv_image = np.array(img1)
+        # BGR -> RGB
+        temp1 = cv2.cvtColor(temp1, cv2.COLOR_RGB2BGR)
+        temp2 = cv2.cvtColor(temp2, cv2.COLOR_RGB2BGR)
 
-# Convert RGB to BGR
-open_cv_image = open_cv_image[:, :, ::-1]
+        # Convert back to PIL image
+        self.image1_copy = Image.fromarray(temp1)
+        self.image2_copy = Image.fromarray(temp2)
 
-gray_image = cv2.cvtColor(open_cv_image, cv2.COLOR_BGR2GRAY)
+        print("Conversion complete.\n")
 
-
-# Convert BGR to RGB
-rgb_image = gray_image[:, :, ::-1] if len(gray_image.shape) == 3 else gray_image
-
-# Convert the NumPy array back to a PIL Image
-pil_image = Image.fromarray(rgb_image)
-
-# Add UI elements
-        self.button = tk.Button(self.root, text="Press Me", command=self.on_button_pressed)
-        self.button.grid(row=2, column=0, columnspan=2)
-"""
