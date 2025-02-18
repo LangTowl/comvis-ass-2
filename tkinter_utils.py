@@ -1,3 +1,4 @@
+import numpy as np
 import tkinter as tk
 from tkinter import ttk
 from PIL import ImageTk, Image
@@ -62,13 +63,31 @@ class TkinterUtils:
         tk.Label(self.root, image = self.tk_image2).grid(row = 1, column = 0)
         tk.Label(self.root, image = self.tk_image2_copy).grid(row = 1, column = 1)
 
+
+
     def on_filter_selected(self, event):
         selected_filter = self.filter_selector.get()
         print(f"New filter selected: {selected_filter}\n")
 
+        # Execute selection
+        self.execute_selection()
+
+        # Update canvas
+        self.update_canvas()
+
+
+
     def on_kernel_selected(self, event):
         selected_kernel = self.size_selector.get()
         print(f"New kernel selected: {selected_kernel}\n")
+
+        # Execute selection
+        self.execute_selection()
+
+        # Update canvas
+        self.update_canvas()
+
+
 
     def on_reset_button_pressed(self):
         print("Reset button pressed!\n")
@@ -83,7 +102,80 @@ class TkinterUtils:
 
         print(f"{self.size_selector.get()} | {self.filter_selector.get()}\n")
 
+        # Update canvas
         self.update_canvas()
+
+
+
+    def execute_selection(self):
+        # Test to see if both selections are complete
+        if self.filter_selector.get() == "Select a Filter" or self.size_selector.get() == "Select a Kernel Size":
+            print("Incomplete selection\n")
+            return
+
+        # Execute corresponding filter function
+        if self.filter_selector.get() == "Box Filter":
+            self.box_filter()
+
+
+
+    def box_filter(self):
+        print("Beginning box filter conversion...\n")
+
+        # Load images
+        img1_cv = np.array(self.image1)
+        img2_cv = np.array(self.image2)
+
+        # Determine kernel size
+        kernel_size = 3
+        kernel = np.ones((kernel_size, kernel_size)) / (kernel_size ** 2)
+        if self.filter_selector.get() == "5 x 5":
+            kernel_size = 5
+            kernel = np.ones((kernel_size, kernel_size)) / (kernel_size ** 2)
+
+        # Determine image dimensions
+        height1, width1, channels1 = img1_cv.shape
+        height2, width2, channels2 = img2_cv.shape
+
+        # Pad images
+        pad = kernel_size // 2
+        padded_img1 = np.pad(img1_cv, ((pad, pad), (pad, pad), (0, 0)), mode = 'reflect')
+        padded_img2 = np.pad(img2_cv, ((pad, pad), (pad, pad), (0, 0)), mode = 'reflect')
+
+        # Create empty output canvases
+        output1 = np.zeros_like(img1_cv, dtype = np.uint8)
+        output2 = np.zeros_like(img2_cv, dtype = np.uint8)
+
+        # Compute box filter for image 1
+        for c1 in range(channels1):
+            for h1 in range(height1):
+                for w1 in range(width1):
+                    # Load pixel values from region
+                    pixels1 = padded_img1[h1 : h1 + kernel_size, w1 : w1 + kernel_size, c1]
+
+                    # Execute computation
+                    output1[h1, w1, c1] = np.clip(np.sum(pixels1 * kernel), 0, 255)
+
+        # Compute box filter for image 2
+        # for c2 in range(channels2):
+        #     for h2 in range(height2):
+        #         for w2 in range(width2):
+        #             # Load pixel values from region
+        #             pixels2 = padded_img2[h2: h2 + kernel_size, w2: w2 + kernel_size, c2]
+        #
+        #             # Execute computation
+        #             output1[h2, w2, c2] = np.clip(np.sum(pixels2 * kernel), 0, 255)
+
+        # Reformat new images
+        new_image1 = Image.fromarray(output1)
+        # new_image2 = Image.fromarray(output2)
+
+        # Update global images
+        self.image1_copy = new_image1
+        # self.image2_copy = new_image2
+
+
+
 """
 import cv2
 import numpy as np
