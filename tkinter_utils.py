@@ -99,6 +99,8 @@ class TkinterUtils:
         # Reset filter selection and size to selector to default state
         self.filter_selector.set("Select a Filter")
         self.size_selector.set("Select a Kernel Size")
+        self.image1_copy = self.image1
+        self.image2_copy = self.image2
 
         print(f"{self.size_selector.get()} | {self.filter_selector.get()}\n")
 
@@ -129,7 +131,7 @@ class TkinterUtils:
         # Determine kernel size
         kernel_size = 3
         kernel = np.ones((kernel_size, kernel_size)) / (kernel_size ** 2)
-        if self.filter_selector.get() == "5 x 5":
+        if self.size_selector.get() == "5 x 5":
             kernel_size = 5
             kernel = np.ones((kernel_size, kernel_size)) / (kernel_size ** 2)
 
@@ -157,22 +159,24 @@ class TkinterUtils:
                     output1[h1, w1, c1] = np.clip(np.sum(pixels1 * kernel), 0, 255)
 
         # Compute box filter for image 2
-        # for c2 in range(channels2):
-        #     for h2 in range(height2):
-        #         for w2 in range(width2):
-        #             # Load pixel values from region
-        #             pixels2 = padded_img2[h2: h2 + kernel_size, w2: w2 + kernel_size, c2]
-        #
-        #             # Execute computation
-        #             output1[h2, w2, c2] = np.clip(np.sum(pixels2 * kernel), 0, 255)
+        for c2 in range(channels2):
+            for h2 in range(height2):
+                for w2 in range(width2):
+                    # Load pixel values from region
+                    pixels2 = padded_img2[h2: h2 + kernel_size, w2 : w2 + kernel_size, c2]
+
+                    # Execute computation
+                    output2[h2, w2, c2] = np.clip(np.sum(pixels2 * kernel), 0, 255)
 
         # Reformat new images
         new_image1 = Image.fromarray(output1)
-        # new_image2 = Image.fromarray(output2)
+        new_image2 = Image.fromarray(output2)
 
         # Update global images
         self.image1_copy = new_image1
-        # self.image2_copy = new_image2
+        self.image2_copy = new_image2
+
+        print("Conversion complete.\n")
 
 
 
