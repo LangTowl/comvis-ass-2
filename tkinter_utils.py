@@ -1,6 +1,5 @@
 import tkinter as tk
-import cv2
-import numpy as np
+from tkinter import ttk
 from PIL import ImageTk, Image
 
 class TkinterUtils:
@@ -29,15 +28,29 @@ class TkinterUtils:
         # Render canvas
         self.update_canvas()
 
-        # Add UI elements
-        self.button = tk.Button(self.root, text="Press Me", command=self.on_button_pressed)
-        self.button.grid(row=2, column=0, columnspan=2)
+        # Add kernel size selection dropdown
+        self.size_options = ["3 x 3", "5 x 5"]
+        self.size_selector = ttk.Combobox(self.root, values=self.size_options, state="readonly")
+        self.size_selector.set("Select a Kernel Size")
+        self.size_selector.grid(row=3, column=0, pady=10)
+        self.size_selector.bind("<<ComboboxSelected>>", self.on_kernel_selected)
+
+        # Add filter selection dropdown
+        self.filter_options = ["Box Filter", "Box Filter (OpenCV)", "X-axis Sobel Filter", "Y-axis Sobel Filter", "XY-axis Sobel Filter", "XY-axis Sobel Filter (OpenCV)", "Gaussian Filter (OpenCV)"]
+        self.filter_selector = ttk.Combobox(self.root, values = self.filter_options, state = "readonly")
+        self.filter_selector.set("Select a Filter")
+        self.filter_selector.grid(row = 4, column = 0, pady = 10)
+        self.filter_selector.bind("<<ComboboxSelected>>", self.on_filter_selected)
+
+        # Add reset button
+        self.button = tk.Button(self.root, text="Reset", command = self.on_reset_button_pressed)
+        self.button.grid(row = 3, column = 1, pady = 10)
 
         # Start main event loop
         self.root.mainloop()
 
     def update_canvas(self):
-        # Convert images to Tkinter-compatible format
+        # Recompute Tkinter image format
         self.tk_image1 = ImageTk.PhotoImage(self.image1)
         self.tk_image1_copy = ImageTk.PhotoImage(self.image1_copy)
         self.tk_image2 = ImageTk.PhotoImage(self.image2)
@@ -49,12 +62,28 @@ class TkinterUtils:
         tk.Label(self.root, image = self.tk_image2).grid(row = 1, column = 0)
         tk.Label(self.root, image = self.tk_image2_copy).grid(row = 1, column = 1)
 
-    def on_button_pressed(self):
-        print("Button pressed")
-        self.image1_copy = self.image2_copy
+    def on_filter_selected(self, event):
+        selected_filter = self.filter_selector.get()
+        print(f"New filter selected: {selected_filter}\n")
+
+    def on_kernel_selected(self, event):
+        selected_kernel = self.size_selector.get()
+        print(f"New kernel selected: {selected_kernel}\n")
+
+    def on_reset_button_pressed(self):
+        print("Reset button pressed!\n")
+
+        print(f"{self.size_selector.get()} | {self.filter_selector.get()}\n")
+
+        print("Resetting...\n")
+
+        # Reset filter selection and size to selector to default state
+        self.filter_selector.set("Select a Filter")
+        self.size_selector.set("Select a Kernel Size")
+
+        print(f"{self.size_selector.get()} | {self.filter_selector.get()}\n")
+
         self.update_canvas()
-
-
 """
 import cv2
 import numpy as np
@@ -77,4 +106,8 @@ rgb_image = gray_image[:, :, ::-1] if len(gray_image.shape) == 3 else gray_image
 
 # Convert the NumPy array back to a PIL Image
 pil_image = Image.fromarray(rgb_image)
+
+# Add UI elements
+        self.button = tk.Button(self.root, text="Press Me", command=self.on_button_pressed)
+        self.button.grid(row=2, column=0, columnspan=2)
 """
