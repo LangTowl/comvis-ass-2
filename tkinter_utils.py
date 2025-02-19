@@ -126,6 +126,8 @@ class TkinterUtils:
             self.sobel_filter("x")
         elif self.filter_selector.get() == "Y-axis Sobel Filter":
             self.sobel_filter("y")
+        elif self.filter_selector.get() == "XY-axis Sobel Filter":
+            self.sobel_filter("xy")
 
 
 
@@ -221,6 +223,10 @@ class TkinterUtils:
         img1_cv = cv2.cvtColor(np.array(self.image1), cv2.COLOR_RGB2BGR)
         img2_cv = cv2.cvtColor(np.array(self.image2), cv2.COLOR_RGB2BGR)
 
+        # X Axis kernel
+        x_kernal = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]
+        y_kernal = [[-1, 2, -1], [0, 0, 0], [1, 2, 1]]
+
         # Determine kernel
         kernel = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]] if axis == "x" else [[-1, 2, -1], [0, 0, 0], [1, 2, 1]]
 
@@ -231,6 +237,14 @@ class TkinterUtils:
         # Create empty output canvases
         output1 = np.zeros_like(img1_cv, dtype = np.uint8)
         output2 = np.zeros_like(img2_cv, dtype = np.uint8)
+        output_xy1 = np.zeros_like(img1_cv, dtype = np.uint8)
+        output_xy2 = np.zeros_like(img1_cv, dtype=np.uint8)
+
+        gradient_x1 = np.zeros_like(img1_cv)
+        gradient_y1 = np.zeros_like(img1_cv)
+        gradient_x2 = np.zeros_like(img2_cv)
+        gradient_y2 = np.zeros_like(img2_cv)
+
 
         # Apply filter to image1
         for h1 in range(1, height1 - 1):
@@ -241,9 +255,19 @@ class TkinterUtils:
                 blue1 = img1_cv[h1 - 1 : h1 + 2, w1 - 1 : w1 + 2, 2]
 
                 # Convolve with kernel across channels and save to output
-                output1[h1, w1, 0] = np.sum(red1 * kernel)
-                output1[h1, w1, 1] = np.sum(green1 * kernel)
-                output1[h1, w1, 2] = np.sum(blue1 * kernel)
+                if axis == "x" or axis == "y":
+                    output1[h1, w1, 0] = np.sum(red1 * kernel)
+                    output1[h1, w1, 1] = np.sum(green1 * kernel)
+                    output1[h1, w1, 2] = np.sum(blue1 * kernel)
+
+                if axis == "xy":
+                    gradient_x1[h1, w1, 0] = np.sum(red1 * x_kernal)
+                    gradient_x1[h1, w1, 1] = np.sum(green1 * x_kernal)
+                    gradient_x1[h1, w1, 2] = np.sum(blue1 * x_kernal)
+
+                    gradient_y1[h1, w1, 0] = np.sum(red1 * y_kernal)
+                    gradient_y1[h1, w1, 1] = np.sum(green1 * y_kernal)
+                    gradient_y1[h1, w1, 2] = np.sum(blue1 * y_kernal)
 
         for h2 in range(1, height2 - 1):
             for w2 in range(1, width2 - 1):
@@ -257,17 +281,45 @@ class TkinterUtils:
                 output2[h2, w2, 1] = np.sum(green2 * kernel)
                 output2[h2, w2, 2] = np.sum(blue2 * kernel)
 
-        # Ensure resultant image values are between (0, 255)
-        output1 = np.clip(output1, 0, 255)
-        output2 = np.clip(output2, 0, 255)
+                if axis == "xy":
+                    gradient_x2[h2, w2, 0] = np.sum(red2 * x_kernal)
+                    gradient_x2[h2, w2, 1] = np.sum(green2 * x_kernal)
+                    gradient_x2[h2, w2, 2] = np.sum(blue2 * x_kernal)
 
-        # Reformat new images
-        new_image1 = Image.fromarray(output1)
-        new_image2 = Image.fromarray(output2)
+                    gradient_y2[h2, w2, 0] = np.sum(red2 * y_kernal)
+                    gradient_y2[h2, w2, 1] = np.sum(green2 * y_kernal)
+                    gradient_y2[h2, w2, 2] = np.sum(blue2 * y_kernal)
 
-        # Update global images
-        self.image1_copy = new_image1
-        self.image2_copy = new_image2
+        # Resolve images for x and y
+        if axis == "x" or axis == "y":
+            output1 = np.clip(output1, 0, 255)
+            output2 = np.clip(output2, 0, 255)
+
+            # Reformat new images
+            new_image1 = Image.fromarray(output1)
+            new_image2 = Image.fromarray(output2)
+
+            # Update global images
+            self.image1_copy = new_image1
+            self.image2_copy = new_image2
+
+        # Resolve images for xy
+        if axis == "xy":
+            mag1 = np.sqrt(gradient_x1 ** 2 + gradient_y1 ** 2)
+            mag2 = np.sqrt(gradient_x2 ** 2 + gradient_y2 ** 2)
+
+            mag1 = np.clip(mag1, 0, 255).astype(np.uint8)
+            mag2 = np.clip(mag2, 0, 255).astype(np.uint8)
+
+            # mag1 = np.uint8((mag1 / np.max(mag1)) * 128)
+            # mag2 = np.uint8((mag2 / np.max(mag2)) * 128)
+
+            output_xy1 = Image.fromarray(mag1)
+            output_xy2 = Image.fromarray(mag2)
+
+            # Update global images
+            self.image1_copy = output_xy1
+            self.image2_copy = output_xy2
 
         print("Conversion complete.\n")
 
