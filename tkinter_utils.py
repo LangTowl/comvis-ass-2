@@ -127,7 +127,8 @@ class TkinterUtils:
             self.sobel_filter("y")
         elif self.filter_selector.get() == "XY-axis Sobel Filter":
             self.sobel_filter("xy")
-
+        elif self.filter_selector.get() == "XY-axis Sobel Filter (OpenCV)":
+            self.sobel_filter_cv()
 
 
     def box_filter(self):
@@ -322,3 +323,16 @@ class TkinterUtils:
         # Convert images to compatible format
         img1_cv = cv2.cvtColor(np.array(self.image1), cv2.COLOR_RGB2BGR)
         img2_cv = cv2.cvtColor(np.array(self.image2), cv2.COLOR_RGB2BGR)
+
+        # Determine dimension
+        dimension = 3 if self.size_selector.get() == "3 x 3" else 5
+
+        # Manipulate images
+        new_img1 = cv2.Sobel(img1_cv, cv2.CV_64F, dx = 0, dy = 1, ksize = dimension)
+        new_img2 = cv2.Sobel(img2_cv, cv2.CV_64F, dx = 0, dy = 1, ksize = dimension)
+
+        # Convert back
+        self.image1_copy = Image.fromarray(np.uint8(new_img1))
+        self.image2_copy = Image.fromarray(np.uint8(new_img2))
+
+        print("Conversion complete.\n")
