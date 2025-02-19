@@ -112,10 +112,9 @@ class TkinterUtils:
 
     def execute_selection(self):
         # Test to see if all required fields are filled
-        if self.filter_selector.get() == "Box Filter":
-            if self.size_selector.get() == "Select a Kernel Size":
-                print("Incomplete selection\n")
-                return
+        if self.filter_selector.get() == "Select a Filter" or self.size_selector.get() == "Select a Kernel Size":
+            print("Incomplete selection\n")
+            return
 
         # Execute corresponding filter function
         if self.filter_selector.get() == "Box Filter":
@@ -224,11 +223,23 @@ class TkinterUtils:
         img2_cv = cv2.cvtColor(np.array(self.image2), cv2.COLOR_RGB2BGR)
 
         # X Axis kernel
-        x_kernal = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]
-        y_kernal = [[-1, 2, -1], [0, 0, 0], [1, 2, 1]]
+        if self.size_selector.get() == "3 x 3":
+            x_kernal = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]
+            y_kernal = [[-1, 2, -1], [0, 0, 0], [1, 2, 1]]
+        else:
+            x_kernal =  [[-1,  0,  0,  0,  1],
+                        [-2,  0,  0,  0,  2],
+                        [-4,  0,  0,  0,  4],
+                        [-2,  0,  0,  0,  2],
+                        [-1,  0,  0,  0,  1]]
+            y_kernal = [[-1, -2, -4, -2, -1],
+                        [ 0,  0,  0,  0,  0],
+                        [ 1,  2,  4,  2,  1],
+                        [ 0,  0,  0,  0,  0],
+                        [ 1,  2,  4,  2,  1]]
 
         # Determine kernel
-        kernel = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]] if axis == "x" else [[-1, 2, -1], [0, 0, 0], [1, 2, 1]]
+        kernel = x_kernal if axis == "x" else y_kernal
 
         # Determine image dimensions
         height1, width1, channels1 = img1_cv.shape
@@ -311,8 +322,8 @@ class TkinterUtils:
             mag1 = np.clip(mag1, 0, 255).astype(np.uint8)
             mag2 = np.clip(mag2, 0, 255).astype(np.uint8)
 
-            # mag1 = np.uint8((mag1 / np.max(mag1)) * 128)
-            # mag2 = np.uint8((mag2 / np.max(mag2)) * 128)
+            mag1 = np.uint8((mag1 / np.max(mag1)) * 255)
+            mag2 = np.uint8((mag2 / np.max(mag2)) * 255)
 
             output_xy1 = Image.fromarray(mag1)
             output_xy2 = Image.fromarray(mag2)
@@ -323,3 +334,11 @@ class TkinterUtils:
 
         print("Conversion complete.\n")
 
+
+
+    def sobel_filter_cv(self):
+        print("Beginning box filter conversion...\n")
+
+        # Convert images to compatible format
+        img1_cv = cv2.cvtColor(np.array(self.image1), cv2.COLOR_RGB2BGR)
+        img2_cv = cv2.cvtColor(np.array(self.image2), cv2.COLOR_RGB2BGR)
