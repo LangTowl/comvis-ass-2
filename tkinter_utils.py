@@ -32,7 +32,7 @@ class TkinterUtils:
 
         # Add kernel size selection dropdown
         self.size_options = ["3 x 3", "5 x 5"]
-        self.size_selector = ttk.Combobox(self.root, values=self.size_options, state="readonly")
+        self.size_selector = ttk.Combobox(self.root, values = self.size_options, state = "readonly")
         self.size_selector.set("Select a Kernel Size")
         self.size_selector.grid(row=3, column=0, pady=10)
         self.size_selector.bind("<<ComboboxSelected>>", self.on_kernel_selected)
@@ -215,124 +215,104 @@ class TkinterUtils:
 
 
 
-    def sobel_filter(self, axis = "x"):
-        print("Beginning sobel filter conversion...\n")
+    def sobel_filter(self, axis = str):
+            print("Beginning sobel filter conversion...\n")
 
-        # Load images
-        img1_cv = cv2.cvtColor(np.array(self.image1), cv2.COLOR_RGB2BGR)
-        img2_cv = cv2.cvtColor(np.array(self.image2), cv2.COLOR_RGB2BGR)
+            # Load images
+            img1_cv = cv2.cvtColor(np.array(self.image1), cv2.COLOR_RGB2BGR)
+            img2_cv = cv2.cvtColor(np.array(self.image2), cv2.COLOR_RGB2BGR)
 
-        # X Axis kernel
-        if self.size_selector.get() == "3 x 3":
-            x_kernal = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]
-            y_kernal = [[-1, 2, -1], [0, 0, 0], [1, 2, 1]]
-        else:
-            x_kernal =  [[-1,  0,  0,  0,  1],
-                        [-2,  0,  0,  0,  2],
-                        [-4,  0,  0,  0,  4],
-                        [-2,  0,  0,  0,  2],
-                        [-1,  0,  0,  0,  1]]
-            y_kernal = [[-1, -2, -4, -2, -1],
-                        [ 0,  0,  0,  0,  0],
-                        [ 1,  2,  4,  2,  1],
-                        [ 0,  0,  0,  0,  0],
-                        [ 1,  2,  4,  2,  1]]
+            # Select kernel
+            kernel_x = None
+            kernel_y = None
+            filter_size = 3 if self.size_selector.get() == "3 x 3" else 5
+            offset = filter_size // 2
 
-        # Determine kernel
-        kernel = x_kernal if axis == "x" else y_kernal
+            if axis == "x" or axis == "xy":
+                kernel_x = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]] if self.size_selector.get() == "3 x 3" else [[-2, -1, 0, 1, 2], [-3, -2, 0, 2, 3], [-4, -3, 0, 3, 4], [-3, -2, 0, 2, 3], [-2, -1, 0, 1, 2]]
 
-        # Determine image dimensions
-        height1, width1, channels1 = img1_cv.shape
-        height2, width2, channels2 = img2_cv.shape
+            if axis == "y" or axis == "xy":
+                kernel_y = [[-1, 2, -1], [0, 0, 0], [1, 2, 1]] if self.size_selector.get() == "3 x 3" else [[-2, -3, -4, -3, -2], [-1, -2, -3, -2, -1], [0,  0,  0,  0,  0], [1,  2,  3,  2,  1], [2,  3,  4,  3,  2]]
 
-        # Create empty output canvases
-        output1 = np.zeros_like(img1_cv, dtype = np.uint8)
-        output2 = np.zeros_like(img2_cv, dtype = np.uint8)
-        output_xy1 = np.zeros_like(img1_cv, dtype = np.uint8)
-        output_xy2 = np.zeros_like(img1_cv, dtype=np.uint8)
+            # Determine image dimensions
+            height1, width1, channels1 = img1_cv.shape
+            height2, width2, channels2 = img2_cv.shape
 
-        gradient_x1 = np.zeros_like(img1_cv)
-        gradient_y1 = np.zeros_like(img1_cv)
-        gradient_x2 = np.zeros_like(img2_cv)
-        gradient_y2 = np.zeros_like(img2_cv)
+            # Create empty output canvases
+            output1 = np.zeros_like(img1_cv, dtype = np.uint8)
+            output2 = np.zeros_like(img2_cv, dtype = np.uint8)
 
+            if axis == "xy":
+                gradient_x1 = np.zeros_like(img1_cv, dtype = np.uint8)
+                gradient_y1 = np.zeros_like(img1_cv, dtype = np.uint8)
+                gradient_x2 = np.zeros_like(img2_cv, dtype = np.uint8)
+                gradient_y2 = np.zeros_like(img2_cv, dtype = np.uint8)
 
-        # Apply filter to image1
-        for h1 in range(1, height1 - 1):
-            for w1 in range(1, width1 - 1):
-                # Pull regions for RGB channels
-                red1 = img1_cv[h1 - 1 : h1 + 2, w1 - 1 : w1 + 2, 0]
-                green1 = img1_cv[h1 - 1:h1 + 2, w1 - 1:w1 + 2, 1]
-                blue1 = img1_cv[h1 - 1 : h1 + 2, w1 - 1 : w1 + 2, 2]
+            # Apply filter to image 1
+            for h1 in range(offset, height1 - offset):
+                for w1 in range(offset, width1 - offset):
+                    # Pull channels pixel values for convolution
+                    red1 = img1_cv[h1 - offset: h1 + offset + 1, w1 - offset: w1 + offset + 1, 2]
+                    green1 = img1_cv[h1 - offset: h1 + offset + 1, w1 - offset: w1 + offset + 1, 1]
+                    blue1 = img1_cv[h1 - offset: h1 + offset + 1, w1 - offset: w1 + offset + 1, 0]
 
-                # Convolve with kernel across channels and save to output
-                if axis == "x" or axis == "y":
-                    output1[h1, w1, 0] = np.sum(red1 * kernel)
-                    output1[h1, w1, 1] = np.sum(green1 * kernel)
-                    output1[h1, w1, 2] = np.sum(blue1 * kernel)
+                    # Convolve
+                    if axis == "x" or axis == "y":
+                        output1[h1, w1, 2] = np.sum(red1 * (kernel_x if axis == "x" else kernel_y))
+                        output1[h1, w1, 1] = np.sum(green1 * (kernel_x if axis == "x" else kernel_y))
+                        output1[h1, w1, 0] = np.sum(blue1 * (kernel_x if axis == "x" else kernel_y))
 
-                if axis == "xy":
-                    gradient_x1[h1, w1, 0] = np.sum(red1 * x_kernal)
-                    gradient_x1[h1, w1, 1] = np.sum(green1 * x_kernal)
-                    gradient_x1[h1, w1, 2] = np.sum(blue1 * x_kernal)
+                    if axis == "xy":
+                        gradient_x1[h1, w1, 2] = np.sum(red1 * kernel_x)
+                        gradient_x1[h1, w1, 1] = np.sum(green1 * kernel_x)
+                        gradient_x1[h1, w1, 0] = np.sum(blue1 * kernel_x)
 
-                    gradient_y1[h1, w1, 0] = np.sum(red1 * y_kernal)
-                    gradient_y1[h1, w1, 1] = np.sum(green1 * y_kernal)
-                    gradient_y1[h1, w1, 2] = np.sum(blue1 * y_kernal)
+                        gradient_y1[h1, w1, 2] = np.sum(red1 * kernel_y)
+                        gradient_y1[h1, w1, 1] = np.sum(green1 * kernel_y)
+                        gradient_y1[h1, w1, 0] = np.sum(blue1 * kernel_y)
 
-        for h2 in range(1, height2 - 1):
-            for w2 in range(1, width2 - 1):
-                # Pull regions for RGB channels
-                red2 = img2_cv[h2 - 1 : h2 + 2, w2 - 1 : w2 + 2, 0]
-                green2 = img2_cv[h2 - 1 : h2 + 2, w2 - 1 : w2 + 2, 1]
-                blue2 = img2_cv[h2 - 1 : h2 + 2, w2 - 1 : w2 + 2, 2]
+            # Apply filter to image 2
+            for h2 in range(offset, height2 - offset):
+                for w2 in range(offset, width2 - offset):
+                    # Pull channels pixel values for convolution
+                    red2 = img2_cv[h2 - offset: h2 + offset + 1, w2 - offset: w2 + offset + 1, 2]
+                    green2 = img2_cv[h2 - offset: h2 + offset + 1, w2 - offset: w2 + offset + 1, 1]
+                    blue2 = img2_cv[h2 - offset: h2 + offset + 1, w2 - offset: w2 + offset + 1, 0]
 
-                # Convolve with kernel across channels and save to output
-                output2[h2, w2, 0] = np.sum(red2 * kernel)
-                output2[h2, w2, 1] = np.sum(green2 * kernel)
-                output2[h2, w2, 2] = np.sum(blue2 * kernel)
+                    # Convolve
+                    if axis == "x" or axis == "y":
+                        output2[h2, w2, 2] = np.sum(red2 * (kernel_x if axis == "x" else kernel_y))
+                        output2[h2, w2, 1] = np.sum(green2 * (kernel_x if axis == "x" else kernel_y))
+                        output2[h2, w2, 0] = np.sum(blue2 * (kernel_x if axis == "x" else kernel_y))
 
-                if axis == "xy":
-                    gradient_x2[h2, w2, 0] = np.sum(red2 * x_kernal)
-                    gradient_x2[h2, w2, 1] = np.sum(green2 * x_kernal)
-                    gradient_x2[h2, w2, 2] = np.sum(blue2 * x_kernal)
+                    if axis == "xy":
+                        gradient_x2[h2, w2, 2] = np.sum(red2 * kernel_x)
+                        gradient_x2[h2, w2, 1] = np.sum(green2 * kernel_x)
+                        gradient_x2[h2, w2, 0] = np.sum(blue2 * kernel_x)
 
-                    gradient_y2[h2, w2, 0] = np.sum(red2 * y_kernal)
-                    gradient_y2[h2, w2, 1] = np.sum(green2 * y_kernal)
-                    gradient_y2[h2, w2, 2] = np.sum(blue2 * y_kernal)
+                        gradient_y2[h2, w2, 2] = np.sum(red2 * kernel_y)
+                        gradient_y2[h2, w2, 1] = np.sum(green2 * kernel_y)
+                        gradient_y2[h2, w2, 0] = np.sum(blue2 * kernel_y)
 
-        # Resolve images for x and y
-        if axis == "x" or axis == "y":
-            output1 = np.clip(output1, 0, 255)
-            output2 = np.clip(output2, 0, 255)
+            if axis == "x" or axis == "y":
+                new_image1 = Image.fromarray(output1)
+                new_image2 = Image.fromarray(output2)
 
-            # Reformat new images
-            new_image1 = Image.fromarray(output1)
-            new_image2 = Image.fromarray(output2)
+                self.image1_copy = new_image1
+                self.image2_copy = new_image2
 
-            # Update global images
-            self.image1_copy = new_image1
-            self.image2_copy = new_image2
+            if axis == "xy":
+                mag1 = np.sqrt(gradient_x1 ** 2 + gradient_y1 ** 2)
+                mag1 = np.uint8((mag1 / np.max(mag1)) * 255)
+                output_xy1 = Image.fromarray(np.uint8(mag1))
+                self.image1_copy = output_xy1
 
-        # Resolve images for xy
-        if axis == "xy":
-            mag1 = np.sqrt(gradient_x1 ** 2 + gradient_y1 ** 2)
-            mag2 = np.sqrt(gradient_x2 ** 2 + gradient_y2 ** 2)
+                mag2 = np.sqrt(gradient_x2 ** 2 + gradient_y2 ** 2)
+                mag2 = np.uint8((mag2 / np.max(mag2)) * 255)
+                output_xy2 = Image.fromarray(np.uint8(mag2))
+                self.image2_copy = output_xy2
 
-            mag1 = np.clip(mag1, 0, 255).astype(np.uint8)
-            mag2 = np.clip(mag2, 0, 255).astype(np.uint8)
-
-            mag1 = np.uint8((mag1 / np.max(mag1)) * 255)
-            mag2 = np.uint8((mag2 / np.max(mag2)) * 255)
-
-            output_xy1 = Image.fromarray(mag1)
-            output_xy2 = Image.fromarray(mag2)
-
-            # Update global images
-            self.image1_copy = output_xy1
-            self.image2_copy = output_xy2
-
-        print("Conversion complete.\n")
+            print("Conversion complete.\n")
 
 
 
