@@ -129,10 +129,13 @@ class TkinterUtils:
             self.sobel_filter("xy")
         elif self.filter_selector.get() == "XY-axis Sobel Filter (OpenCV)":
             self.sobel_filter_cv()
+        elif self.filter_selector.get() == "Gaussian Filter (OpenCV)":
+            self.gaussian_filter()
+
 
 
     def box_filter(self):
-        print("Beginning box filter conversion...\n")
+        print("Beginning filter conversion...\n")
 
         # Load images
         img1_cv = np.array(self.image1)
@@ -191,7 +194,7 @@ class TkinterUtils:
 
 
     def box_filter_opencv(self):
-        print("Beginning box filter conversion...\n")
+        print("Beginning filter conversion...\n")
 
         # Convert images to compatible format
         img1_cv = cv2.cvtColor(np.array(self.image1), cv2.COLOR_RGB2BGR)
@@ -217,7 +220,7 @@ class TkinterUtils:
 
 
     def sobel_filter(self, axis = str):
-            print("Beginning sobel filter conversion...\n")
+            print("Beginning filter conversion...\n")
 
             # Load images
             img1_cv = cv2.cvtColor(np.array(self.image1), cv2.COLOR_RGB2BGR)
@@ -318,7 +321,7 @@ class TkinterUtils:
 
 
     def sobel_filter_cv(self):
-        print("Beginning box filter conversion...\n")
+        print("Beginning filter conversion...\n")
 
         # Convert images to compatible format
         img1_cv = cv2.cvtColor(np.array(self.image1), cv2.COLOR_RGB2BGR)
@@ -332,6 +335,30 @@ class TkinterUtils:
         new_img2 = cv2.Sobel(img2_cv, cv2.CV_64F, dx = 0, dy = 1, ksize = dimension)
 
         # Convert back
+        self.image1_copy = Image.fromarray(np.uint8(new_img1))
+        self.image2_copy = Image.fromarray(np.uint8(new_img2))
+
+        print("Conversion complete.\n")
+
+
+
+    def gaussian_filter(self):
+        print("Beginning filter conversion...\n")
+
+        # Convert images to compatible format
+        img1_cv = cv2.cvtColor(np.array(self.image1), cv2.COLOR_RGB2BGR)
+        img2_cv = cv2.cvtColor(np.array(self.image2), cv2.COLOR_RGB2BGR)
+
+        # Determine dimension
+        dimension = (3, 3) if self.size_selector.get() == "3 x 3" else (5, 5)
+
+        # Manipulate images
+        new_img1 = cv2.GaussianBlur(img1_cv, dimension, 0)
+        new_img2 = cv2.GaussianBlur(img2_cv, dimension, 0)
+
+        # Convert back
+        new_img1 = cv2.cvtColor(new_img1, cv2.COLOR_BGR2RGB)
+        new_img2 = cv2.cvtColor(new_img2, cv2.COLOR_BGR2RGB)
         self.image1_copy = Image.fromarray(np.uint8(new_img1))
         self.image2_copy = Image.fromarray(np.uint8(new_img2))
 
