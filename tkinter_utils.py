@@ -111,16 +111,21 @@ class TkinterUtils:
 
 
     def execute_selection(self):
-        # Test to see if both selections are complete
-        if self.filter_selector.get() == "Select a Filter" or self.size_selector.get() == "Select a Kernel Size":
-            print("Incomplete selection\n")
-            return
+        # Test to see if all required fields are filled
+        if self.filter_selector.get() == "Box Filter":
+            if self.size_selector.get() == "Select a Kernel Size":
+                print("Incomplete selection\n")
+                return
 
         # Execute corresponding filter function
         if self.filter_selector.get() == "Box Filter":
             self.box_filter()
         elif self.filter_selector.get() == "Box Filter (OpenCV)":
             self.box_filter_opencv()
+        elif self.filter_selector.get() == "X-axis Sobel Filter":
+            self.sobel_filter("x")
+        elif self.filter_selector.get() == "Y-axis Sobel Filter":
+            self.sobel_filter("y")
 
 
 
@@ -181,6 +186,8 @@ class TkinterUtils:
 
         print("Conversion complete.\n")
 
+
+
     def box_filter_opencv(self):
         print("Beginning box filter conversion...\n")
 
@@ -202,6 +209,65 @@ class TkinterUtils:
         # Convert back to PIL image
         self.image1_copy = Image.fromarray(temp1)
         self.image2_copy = Image.fromarray(temp2)
+
+        print("Conversion complete.\n")
+
+
+
+    def sobel_filter(self, axis = "x"):
+        print("Beginning sobel filter conversion...\n")
+
+        # Load images
+        img1_cv = cv2.cvtColor(np.array(self.image1), cv2.COLOR_RGB2BGR)
+        img2_cv = cv2.cvtColor(np.array(self.image2), cv2.COLOR_RGB2BGR)
+
+        # Determine kernel
+        kernel = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]] if axis == "x" else [[-1, 2, -1], [0, 0, 0], [1, 2, 1]]
+
+        # Determine image dimensions
+        height1, width1, channels1 = img1_cv.shape
+        height2, width2, channels2 = img2_cv.shape
+
+        # Create empty output canvases
+        output1 = np.zeros_like(img1_cv, dtype = np.uint8)
+        output2 = np.zeros_like(img2_cv, dtype = np.uint8)
+
+        # Apply filter to image1
+        for h1 in range(1, height1 - 1):
+            for w1 in range(1, width1 - 1):
+                # Pull regions for RGB channels
+                red1 = img1_cv[h1 - 1 : h1 + 2, w1 - 1 : w1 + 2, 0]
+                green1 = img1_cv[h1 - 1:h1 + 2, w1 - 1:w1 + 2, 1]
+                blue1 = img1_cv[h1 - 1 : h1 + 2, w1 - 1 : w1 + 2, 2]
+
+                # Convolve with kernel across channels and save to output
+                output1[h1, w1, 0] = np.sum(red1 * kernel)
+                output1[h1, w1, 1] = np.sum(green1 * kernel)
+                output1[h1, w1, 2] = np.sum(blue1 * kernel)
+
+        for h2 in range(1, height2 - 1):
+            for w2 in range(1, width2 - 1):
+                # Pull regions for RGB channels
+                red2 = img2_cv[h2 - 1 : h2 + 2, w2 - 1 : w2 + 2, 0]
+                green2 = img2_cv[h2 - 1 : h2 + 2, w2 - 1 : w2 + 2, 1]
+                blue2 = img2_cv[h2 - 1 : h2 + 2, w2 - 1 : w2 + 2, 2]
+
+                # Convolve with kernel across channels and save to output
+                output2[h2, w2, 0] = np.sum(red2 * kernel)
+                output2[h2, w2, 1] = np.sum(green2 * kernel)
+                output2[h2, w2, 2] = np.sum(blue2 * kernel)
+
+        # Ensure resultant image values are between (0, 255)
+        output1 = np.clip(output1, 0, 255)
+        output2 = np.clip(output2, 0, 255)
+
+        # Reformat new images
+        new_image1 = Image.fromarray(output1)
+        new_image2 = Image.fromarray(output2)
+
+        # Update global images
+        self.image1_copy = new_image1
+        self.image2_copy = new_image2
 
         print("Conversion complete.\n")
 
